@@ -1,0 +1,57 @@
+name: CD
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:        # lets you run it by hand from the Actions tab
+
+concurrency:
+  group: snowflake-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+      SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+      SNOWFLAKE_PRIVATE_KEY_RAW: ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
+      SNOWFLAKE_AUTHENTICATOR: SNOWFLAKE_JWT
+      SNOWFLAKE_ROLE: EVIDENCE_DEV
+      SNOWFLAKE_WAREHOUSE: EVIDENCE_WH
+      SNOWFLAKE_DATABASE: EVIDENCE_DB
+      SNOWFLAKE_SCHEMA: CORE
+
+    steps:
+      - name: Get the code
+        uses: actions/checkout@v4
+
+      - name: Install Snowflake CLI
+        uses: snowflakedb/snowflake-cli-action@v1.5
+
+      - name: 1. Test the connection
+        run: snow connection test -x
+
+      - name: 2. Deploy the rules (08_rules.sql)
+        run: snow sql -f sql/08_rules.sql -x
+
+      - name: 3. Run the data tests (09_tests.sql)
+        run: |
+          snow sql -f sql/09_tests.sql -x --format json > test_results.json
+          cat test_results.json
+          FAILS=$(jq '[.. | objects | select(has("FAILURES")) | select(.FAILURES > 0)] | length' test_results.json)
+          if [ "$FAILS" -gt 0 ]; then
+            echo "$FAILS data test(s) failed"
+            exit 1
+          fi
+          echo "All data tests passed"
+
+      - name: 4. Smoke test
+        run: |
+          snow sql -q "SELECT COUNT(*) AS N FROM EVIDENCE_DB.CORE.HYPOTHESIS_SUMMARY" -x --format json > smoke.json
+          N=$(jq '[.. | objects | select(has("N")) | .N] | first' smoke.json)
+          if [ "$N" -lt 1 ]; then
+            echo "HYPOTHESIS_SUMMARY is empty"
+            exit 1
+          fi
+          echo "Summary view has $N rows"
