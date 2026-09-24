@@ -47,11 +47,11 @@ jobs:
         run: snow connection test -x
 
       - name: 2. Deploy the rules (08_rules.sql)
-        run: snow sql -f "$(git ls-files '*08_rules.sql' | head -n 1)" -x
+        run: snow sql -f "$(git ls-files '*08_rules.sql' | head -n 1)" -x --enable-templating NONE
 
       - name: 3. Run the data tests (09_tests.sql)
         run: |
-          snow sql -f "$(git ls-files '*09_tests.sql' | head -n 1)" -x --format json > test_results.json
+          snow sql -f "$(git ls-files '*09_tests.sql' | head -n 1)" -x --enable-templating NONE --format json > test_results.json
           cat test_results.json
           FAILS=$(jq '[.. | objects | select(has("FAILURES")) | select(.FAILURES > 0)] | length' test_results.json)
           if [ "$FAILS" -gt 0 ]; then
@@ -62,7 +62,7 @@ jobs:
 
       - name: 4. Smoke test
         run: |
-          snow sql -q "SELECT COUNT(*) AS N FROM EVIDENCE_DB.CORE.HYPOTHESIS_SUMMARY" -x --format json > smoke.json
+          snow sql -q "SELECT COUNT(*) AS N FROM EVIDENCE_DB.CORE.HYPOTHESIS_SUMMARY" -x --enable-templating NONE --format json > smoke.json
           N=$(jq '[.. | objects | select(has("N")) | .N] | first' smoke.json)
           if [ "$N" -lt 1 ]; then
             echo "HYPOTHESIS_SUMMARY is empty"
