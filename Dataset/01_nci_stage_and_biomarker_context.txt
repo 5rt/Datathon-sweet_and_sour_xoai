@@ -1,0 +1,16 @@
+TITLE: Breast cancer stage and biomarker context
+SOURCE AUTHORITY: U.S. National Cancer Institute (NCI)
+SOURCE URL: https://www.cancer.gov/types/breast/stages
+ACCESSED: 2026-09-24
+FORMAT ROLE: Website-derived text source (not converted from a PDF)
+
+CURATED TEXT RECORD
+
+Breast cancer stage describes how far the cancer has developed and whether it has spread. The stage is determined using the tumour, lymph-node and metastasis (TNM) findings together with tumour grade and biomarker information, including HER2 and hormone-receptor status.
+
+Clinical prognostic staging is assigned before surgery. Pathological prognostic staging is used when surgery is the first treatment and incorporates findings from the removed breast and lymph-node tissue.
+
+PROJECT RELEVANCE
+
+Drug evidence should not be grouped by stage number alone. The extraction schema should retain disease setting, HER2 status, hormone-receptor status, prior treatment and whether treatment is neoadjuvant, adjuvant or metastatic.
+

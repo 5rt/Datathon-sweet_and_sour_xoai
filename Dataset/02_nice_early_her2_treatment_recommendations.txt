@@ -1,0 +1,18 @@
+TITLE: HER2-positive early and locally advanced breast cancer recommendations
+SOURCE AUTHORITY: National Institute for Health and Care Excellence (NICE)
+SOURCE URL: https://www.nice.org.uk/guidance/ng101/chapter/Recommendations
+ACCESSED: 2026-09-24
+FORMAT ROLE: Website-derived text source (not converted from a PDF)
+
+CURATED TEXT RECORD
+
+For HER2-positive invasive breast cancer, NICE recommends neoadjuvant chemotherapy where indicated. Pertuzumab with trastuzumab is an option for locally advanced, inflammatory or high-risk early-stage HER2-positive disease.
+
+After surgery, trastuzumab emtansine (T-DM1/Kadcyla) is an option when residual invasive disease remains after neoadjuvant taxane-based and HER2-targeted therapy. Pertuzumab with trastuzumab and chemotherapy is an adjuvant option for node-positive disease. Adjuvant trastuzumab is offered for T1c and larger HER2-positive invasive cancer, and may be considered for T1a/T1b disease after considering comorbidities, prognostic features and toxicity.
+
+The recommendations also call for caution with trastuzumab when there is reduced left-ventricular ejection fraction or clinically important cardiac disease.
+
+PROJECT RELEVANCE
+
+This source connects treatment setting to medicine choice and provides evidence for extracting cardiac-monitoring requirements as a cross-drug safety theme.
+

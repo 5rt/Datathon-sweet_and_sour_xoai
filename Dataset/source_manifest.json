@@ -1,0 +1,189 @@
+{
+  "dataset_name": "HER2-positive breast cancer medicines by treatment setting and side effects",
+  "created_date": "2026-09-24",
+  "source_format_policy": "Mixed independent source formats: original PDFs and separate website-derived text records. No CSV and no duplicate PDF-to-text copies.",
+  "scope": {
+    "disease": "breast cancer",
+    "biomarker": "HER2-positive",
+    "treatment_settings": [
+      "early or locally advanced; neoadjuvant/adjuvant",
+      "residual invasive disease after neoadjuvant therapy",
+      "unresectable or metastatic"
+    ],
+    "drugs": [
+      "trastuzumab",
+      "pertuzumab",
+      "ado-trastuzumab emtansine (T-DM1)",
+      "fam-trastuzumab deruxtecan (T-DXd)"
+    ]
+  },
+  "sources": [
+    {
+      "document_id": "PDF01",
+      "file": "pdfs/01_nz_herceptin_trastuzumab.pdf",
+      "format": "pdf",
+      "authority": "Medsafe / sponsor data sheet",
+      "jurisdiction": "New Zealand",
+      "drug": ["trastuzumab"],
+      "settings": ["early/adjuvant", "metastatic"],
+      "side_effect_focus": ["cardiac dysfunction", "infusion reactions", "pulmonary toxicity"],
+      "source_url": "https://www.medsafe.govt.nz/profs/datasheet/h/Herceptininf.pdf"
+    },
+    {
+      "document_id": "PDF02",
+      "file": "pdfs/02_nz_perjeta_pertuzumab.pdf",
+      "format": "pdf",
+      "authority": "Medsafe / sponsor data sheet",
+      "jurisdiction": "New Zealand",
+      "drug": ["pertuzumab"],
+      "settings": ["neoadjuvant", "adjuvant", "metastatic"],
+      "side_effect_focus": ["diarrhoea", "neutropenia", "cardiac dysfunction", "infusion reactions"],
+      "source_url": "https://www.medsafe.govt.nz/profs/datasheet/p/perjetainf.pdf"
+    },
+    {
+      "document_id": "PDF03",
+      "file": "pdfs/03_nz_kadcyla_tdm1.pdf",
+      "format": "pdf",
+      "authority": "Medsafe / sponsor data sheet",
+      "jurisdiction": "New Zealand",
+      "drug": ["ado-trastuzumab emtansine (T-DM1)"],
+      "settings": ["residual invasive disease after neoadjuvant therapy", "metastatic"],
+      "side_effect_focus": ["hepatotoxicity", "thrombocytopenia", "cardiac dysfunction", "pulmonary toxicity"],
+      "source_url": "https://www.medsafe.govt.nz/profs/datasheet/k/kadcylainj.pdf"
+    },
+    {
+      "document_id": "PDF04",
+      "file": "pdfs/04_nz_enhertu_tdxd.pdf",
+      "format": "pdf",
+      "authority": "Medsafe / sponsor data sheet",
+      "jurisdiction": "New Zealand",
+      "drug": ["fam-trastuzumab deruxtecan (T-DXd)"],
+      "settings": ["advanced or metastatic"],
+      "side_effect_focus": ["interstitial lung disease/pneumonitis", "neutropenia", "cardiac dysfunction", "nausea"],
+      "source_url": "https://www.medsafe.govt.nz/profs/datasheet/e/Enhertuinf.pdf"
+    },
+    {
+      "document_id": "PDF05",
+      "file": "pdfs/05_us_herceptin_label.pdf",
+      "format": "pdf",
+      "authority": "U.S. FDA",
+      "jurisdiction": "United States",
+      "drug": ["trastuzumab"],
+      "settings": ["adjuvant", "metastatic"],
+      "side_effect_focus": ["cardiomyopathy", "infusion reactions", "pulmonary toxicity"],
+      "source_url": "https://www.accessdata.fda.gov/drugsatfda_docs/label/2024/103792s5354lbl.pdf"
+    },
+    {
+      "document_id": "PDF06",
+      "file": "pdfs/06_us_perjeta_label.pdf",
+      "format": "pdf",
+      "authority": "U.S. FDA",
+      "jurisdiction": "United States",
+      "drug": ["pertuzumab"],
+      "settings": ["neoadjuvant", "adjuvant", "metastatic"],
+      "side_effect_focus": ["left ventricular dysfunction", "diarrhea", "neutropenia", "infusion reactions"],
+      "source_url": "https://www.accessdata.fda.gov/drugsatfda_docs/label/2025/125409s139lbl.pdf"
+    },
+    {
+      "document_id": "PDF07",
+      "file": "pdfs/07_us_kadcyla_label.pdf",
+      "format": "pdf",
+      "authority": "U.S. FDA",
+      "jurisdiction": "United States",
+      "drug": ["ado-trastuzumab emtansine (T-DM1)"],
+      "settings": ["residual invasive disease after neoadjuvant therapy", "metastatic"],
+      "side_effect_focus": ["hepatotoxicity", "cardiac toxicity", "thrombocytopenia", "pulmonary toxicity"],
+      "source_url": "https://www.accessdata.fda.gov/drugsatfda_docs/label/2025/125427s121lbl.pdf"
+    },
+    {
+      "document_id": "PDF08",
+      "file": "pdfs/08_us_enhertu_label.pdf",
+      "format": "pdf",
+      "authority": "U.S. FDA",
+      "jurisdiction": "United States",
+      "drug": ["fam-trastuzumab deruxtecan (T-DXd)"],
+      "settings": ["unresectable or metastatic"],
+      "side_effect_focus": ["interstitial lung disease/pneumonitis", "neutropenia", "left ventricular dysfunction"],
+      "source_url": "https://www.accessdata.fda.gov/drugsatfda_docs/label/2025/761139s038s042lbl.pdf"
+    },
+    {
+      "document_id": "PDF09",
+      "file": "pdfs/09_nice_early_locally_advanced_breast_cancer.pdf",
+      "format": "pdf",
+      "authority": "NICE",
+      "jurisdiction": "United Kingdom",
+      "drug": ["trastuzumab", "pertuzumab", "trastuzumab emtansine"],
+      "settings": ["early", "locally advanced", "neoadjuvant", "adjuvant", "residual disease"],
+      "side_effect_focus": ["cardiac toxicity and monitoring", "treatment toxicity considerations"],
+      "source_url": "https://www.nice.org.uk/guidance/ng101/resources/early-and-locally-advanced-breastcancer-diagnosis-and-management-pdf-66141532913605"
+    },
+    {
+      "document_id": "PDF10",
+      "file": "pdfs/10_aphinity_early_stage_fda_review.pdf",
+      "format": "pdf",
+      "authority": "U.S. FDA",
+      "jurisdiction": "United States",
+      "drug": ["pertuzumab", "trastuzumab"],
+      "settings": ["early/adjuvant"],
+      "evidence_type": "regulatory clinical review",
+      "has_performance_chart": true,
+      "chart": "APHINITY invasive disease-free survival Kaplan-Meier curve",
+      "source_url": "https://www.accessdata.fda.gov/drugsatfda_docs/nda/2017/125409Orig1s118.pdf"
+    },
+    {
+      "document_id": "PDF11",
+      "file": "pdfs/11_destiny_breast03_trial.pdf",
+      "format": "pdf",
+      "authority": "Nature Medicine",
+      "jurisdiction": "international clinical trial",
+      "drug": ["fam-trastuzumab deruxtecan (T-DXd)", "ado-trastuzumab emtansine (T-DM1)"],
+      "settings": ["previously treated unresectable or metastatic"],
+      "evidence_type": "phase 3 trial report",
+      "has_performance_chart": true,
+      "chart": "overall and progression-free survival results",
+      "source_url": "https://www.nature.com/articles/s41591-024-03021-7.pdf"
+    },
+    {
+      "document_id": "PDF12",
+      "file": "pdfs/12_katherine_residual_disease_fda_label.pdf",
+      "format": "pdf",
+      "authority": "U.S. FDA",
+      "jurisdiction": "United States",
+      "drug": ["ado-trastuzumab emtansine (T-DM1)", "trastuzumab"],
+      "settings": ["early breast cancer with residual invasive disease after neoadjuvant therapy"],
+      "evidence_type": "prescribing information with KATHERINE clinical study",
+      "has_performance_chart": true,
+      "chart": "KATHERINE invasive disease-free survival Kaplan-Meier curve",
+      "source_url": "https://www.accessdata.fda.gov/drugsatfda_docs/label/2019/125427s105lbl.pdf",
+      "note": "Historic chart-bearing label retained for the figure; use PDF07 for current safety labeling."
+    },
+    {
+      "document_id": "TXT01",
+      "file": "text_sources/01_nci_stage_and_biomarker_context.txt",
+      "format": "text",
+      "authority": "NCI",
+      "source_url": "https://www.cancer.gov/types/breast/stages"
+    },
+    {
+      "document_id": "TXT02",
+      "file": "text_sources/02_nice_early_her2_treatment_recommendations.txt",
+      "format": "text",
+      "authority": "NICE",
+      "source_url": "https://www.nice.org.uk/guidance/ng101/chapter/Recommendations"
+    },
+    {
+      "document_id": "TXT03",
+      "file": "text_sources/03_nci_her2_treatment_across_settings.txt",
+      "format": "text",
+      "authority": "NCI",
+      "source_url": "https://www.cancer.gov/types/breast/hp/breast-treatment-pdq"
+    },
+    {
+      "document_id": "TXT04",
+      "file": "text_sources/04_fda_enhertu_pertuzumab_metastatic_approval.txt",
+      "format": "text",
+      "authority": "U.S. FDA",
+      "source_url": "https://www.fda.gov/drugs/drug-approvals-and-databases/fda-approves-fam-trastuzumab-deruxtecan-nxki-pertuzumab-unresectable-or-metastatic-her2-positive"
+    }
+  ]
+}

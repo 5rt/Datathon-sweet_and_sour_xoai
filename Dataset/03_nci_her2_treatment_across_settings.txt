@@ -1,0 +1,18 @@
+TITLE: HER2-targeted treatment across early, residual and metastatic settings
+SOURCE AUTHORITY: U.S. National Cancer Institute (NCI), Breast Cancer Treatment PDQ
+SOURCE URL: https://www.cancer.gov/types/breast/hp/breast-treatment-pdq
+ACCESSED: 2026-09-24
+FORMAT ROLE: Website-derived text source (not converted from a PDF)
+
+CURATED TEXT RECORD
+
+For HER2-positive early breast cancer, one year of adjuvant HER2-targeted therapy is a standard treatment approach. Trastuzumab has also been studied before surgery in locally advanced or inflammatory HER2-positive breast cancer.
+
+For HER2-positive metastatic breast cancer, HER2-targeted agents include trastuzumab, pertuzumab, trastuzumab emtansine (T-DM1) and trastuzumab deruxtecan (T-DXd). The CLEOPATRA trial evaluated pertuzumab plus trastuzumab and docetaxel in the first-line metastatic setting.
+
+DESTINY-Breast03 compared T-DXd with T-DM1 after previous trastuzumab and taxane treatment. The evidence record reports improved progression-free survival with T-DXd, while interstitial lung disease/pneumonitis was more frequent with T-DXd than with T-DM1.
+
+PROJECT RELEVANCE
+
+This source supplies plain-text evidence that links drug sequence, disease setting, efficacy and an important therapy-specific adverse effect.
+

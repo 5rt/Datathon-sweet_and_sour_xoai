@@ -1,0 +1,16 @@
+TITLE: FDA approval of T-DXd plus pertuzumab in unresectable or metastatic HER2-positive breast cancer
+SOURCE AUTHORITY: U.S. Food and Drug Administration (FDA)
+SOURCE URL: https://www.fda.gov/drugs/drug-approvals-and-databases/fda-approves-fam-trastuzumab-deruxtecan-nxki-pertuzumab-unresectable-or-metastatic-her2-positive
+ACCESSED: 2026-09-24
+FORMAT ROLE: Website-derived text source (not converted from a PDF)
+
+CURATED TEXT RECORD
+
+In December 2025, the FDA approved fam-trastuzumab deruxtecan-nxki (T-DXd/Enhertu) with pertuzumab as first-line treatment for adults with unresectable or metastatic HER2-positive breast cancer confirmed by an approved test.
+
+The decision was based on DESTINY-Breast09, a randomized global trial involving adults with HER2-positive advanced or metastatic breast cancer who had not received prior chemotherapy or HER2-targeted therapy for advanced disease, subject to the trial's stated eligibility conditions.
+
+PROJECT RELEVANCE
+
+This current approval record is useful for detecting changes over time. It should not be merged silently with older documents that describe trastuzumab plus pertuzumab and chemotherapy as the first-line metastatic standard. Store publication or revision date and jurisdiction with every claim.
+
