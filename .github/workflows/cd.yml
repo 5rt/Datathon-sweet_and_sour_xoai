@@ -3,7 +3,7 @@ name: CD
 on:
   push:
     branches: [main]
-  workflow_dispatch:        # lets you run it by hand from the Actions tab
+  workflow_dispatch:
 
 concurrency:
   group: snowflake-deploy
@@ -15,7 +15,6 @@ jobs:
     env:
       SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
       SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
-      SNOWFLAKE_PRIVATE_KEY_RAW: ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
       SNOWFLAKE_AUTHENTICATOR: SNOWFLAKE_JWT
       SNOWFLAKE_ROLE: EVIDENCE_DEV
       SNOWFLAKE_WAREHOUSE: EVIDENCE_WH
@@ -29,15 +28,30 @@ jobs:
       - name: Install Snowflake CLI
         uses: snowflakedb/snowflake-cli-action@v1.5
 
+      - name: Prepare the private key (fixes lost line breaks)
+        env:
+          KEY_IN: ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
+        run: |
+          BODY=$(printf '%s' "$KEY_IN" \
+            | sed -e 's/-----BEGIN PRIVATE KEY-----//' -e 's/-----END PRIVATE KEY-----//' \
+            | tr -d ' \n\r\t')
+          {
+            echo "SNOWFLAKE_PRIVATE_KEY_RAW<<KEYEOF"
+            echo "-----BEGIN PRIVATE KEY-----"
+            echo "$BODY" | fold -w 64
+            echo "-----END PRIVATE KEY-----"
+            echo "KEYEOF"
+          } >> "$GITHUB_ENV"
+
       - name: 1. Test the connection
         run: snow connection test -x
 
       - name: 2. Deploy the rules (08_rules.sql)
-        run: snow sql -f sql/08_rules.sql -x
+        run: snow sql -f "$(git ls-files '*08_rules.sql' | head -n 1)" -x
 
       - name: 3. Run the data tests (09_tests.sql)
         run: |
-          snow sql -f sql/09_tests.sql -x --format json > test_results.json
+          snow sql -f "$(git ls-files '*09_tests.sql' | head -n 1)" -x --format json > test_results.json
           cat test_results.json
           FAILS=$(jq '[.. | objects | select(has("FAILURES")) | select(.FAILURES > 0)] | length' test_results.json)
           if [ "$FAILS" -gt 0 ]; then
