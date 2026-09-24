@@ -1,7 +1,7 @@
 """
 Breast Cancer Evidence Stress-Testing Assistant (Streamlit in Snowflake)
 
-Sections
+Tabs
   1  Stress-test a statement: rules find evidence, compare it fairly, summarise it,
      and a human reviews each result.
   2  Add a document: upload a public PDF/TXT/MD/JSON with its source details.
@@ -13,7 +13,7 @@ Design
   - All logic lives in SQL views and two Snowflake functions (READ_DOC, OCR_IMAGE);
     the app only calls them, so it needs no extra Python packages.
   - Every user value is a bind parameter (?), never pasted into SQL.
-  - Reads are cached; anything that writes data invalidates the query cache.
+  - Lookups are cached; anything that writes data clears the cache.
   - Not a diagnostic tool and not medical advice.
 """
 
@@ -21,8 +21,6 @@ import io
 import re
 
 import streamlit as st
-
-st.set_page_config(page_title="Evidence Stress-Testing Assistant", page_icon="🔎", layout="wide")
 
 session = st.connection("snowflake").session()
 S = "EVIDENCE_DB.CORE"
@@ -35,34 +33,20 @@ AUTO = "Detect automatically"
 # Helpers
 # ---------------------------------------------------------------
 
-@st.cache_data(ttl=600, show_spinner=False)
-def _query(sql, params):
-    """Cached implementation; tuple parameters produce stable cache keys."""
-    return session.sql(sql, params=list(params)).to_pandas()
-
-
 def query(sql, params=None):
-    """Run and briefly cache a SELECT, including parameterised SELECTs."""
-    return _query(sql, tuple(params or ()))
+    """Run a SELECT and return a DataFrame."""
+    return session.sql(sql, params=params).to_pandas()
 
 
 def execute(sql, params=None):
     """Run a statement that changes data, then clear cached lookups."""
     session.sql(sql, params=params).collect()
-    _query.clear()
+    st.cache_data.clear()
 
 
-def execute_many(statements):
-    """Run related writes and invalidate cached reads only once."""
-    try:
-        for sql, params in statements:
-            session.sql(sql, params=params).collect()
-    finally:
-        _query.clear()
-
-
+@st.cache_data(ttl=600)
 def cached(sql):
-    """Compatibility alias for lookup queries."""
+    """Cached SELECT for lookups that rarely change."""
     return query(sql)
 
 
@@ -70,7 +54,6 @@ def drugs():
     return cached(f"SELECT DISTINCT drug FROM {S}.DRUG_TERMS ORDER BY drug")["DRUG"].tolist()
 
 
-@st.cache_data(ttl=600, show_spinner=False)
 def stage_bytes(stage, file_name):
     return session.file.get_stream(f"@{S}.{stage}/{file_name}").read()
 
@@ -83,14 +66,13 @@ def pick(label, frame, cols):
     """Selectbox over a DataFrame; returns the chosen row, or None if empty."""
     if frame.empty:
         return None
-    labels = [f"{i + 1}. " + " | ".join(str(frame.iloc[i][c]) for c in cols) for i in range(len(frame))]
-    index = st.selectbox(label, range(len(frame)), format_func=labels.__getitem__)
-    return frame.iloc[index]
+    labels = [f"{i + 1}. " + " | ".join(str(r[c]) for c in cols) for i, (_, r) in enumerate(frame.iterrows())]
+    return frame.iloc[labels.index(st.selectbox(label, labels))]
 
 
 def show_table(title, sql, params, empty, drop=()):
     st.markdown(f"### {title}")
-    frame = query(sql, tuple(params or ()))
+    frame = query(sql, params)
     if frame.empty:
         st.info(empty)
     else:
@@ -121,20 +103,16 @@ def upload_form(key, types, button):
 def register_file(stage, kind, file_name, data, doc_type, title, publisher, url, drug, derived_tables):
     """Upload to a stage, replace any older version, write the library card and file fingerprint."""
     session.file.put_stream(io.BytesIO(data), f"@{S}.{stage}/{file_name}", auto_compress=False, overwrite=True)
-    stage_bytes.clear()
-    statements = [(f"ALTER STAGE {S}.{stage} REFRESH", None)]
-    statements.extend((f"DELETE FROM {S}.{table} WHERE file_name = ?", [file_name])
-                      for table in ("SOURCE_REGISTER", "STAGE_FILES", *derived_tables))
-    statements.extend([
-        (f"""INSERT INTO {S}.SOURCE_REGISTER
-              (file_name, title, publisher, source_url, doc_type, primary_drug, downloaded_on, why_chosen)
-              VALUES (?, ?, ?, ?, ?, ?, CURRENT_DATE(), 'Uploaded through the app')""",
-         [file_name, title, publisher, url, doc_type, drug]),
-        (f"""INSERT INTO {S}.STAGE_FILES
-              SELECT RELATIVE_PATH, ?, MD5, SIZE, LAST_MODIFIED
-              FROM DIRECTORY(@{S}.{stage}) WHERE RELATIVE_PATH = ?""", [kind, file_name]),
-    ])
-    execute_many(statements)
+    execute(f"ALTER STAGE {S}.{stage} REFRESH")
+    for table in ("SOURCE_REGISTER", "STAGE_FILES", *derived_tables):
+        execute(f"DELETE FROM {S}.{table} WHERE file_name = ?", [file_name])
+    execute(f"""INSERT INTO {S}.SOURCE_REGISTER
+                (file_name, title, publisher, source_url, doc_type, primary_drug, downloaded_on, why_chosen)
+                VALUES (?, ?, ?, ?, ?, ?, CURRENT_DATE(), 'Uploaded through the app')""",
+            [file_name, title, publisher, url, doc_type, drug])
+    execute(f"""INSERT INTO {S}.STAGE_FILES
+                SELECT RELATIVE_PATH, ?, MD5, SIZE, LAST_MODIFIED
+                FROM DIRECTORY(@{S}.{stage}) WHERE RELATIVE_PATH = ?""", [kind, file_name])
 
 
 # ---------------------------------------------------------------
@@ -167,11 +145,9 @@ def sidebar():
                     st.success("Statement added.")
 
     st.sidebar.divider()
-    sources = cached(f"SELECT publisher, title FROM {S}.SOURCE_REGISTER ORDER BY publisher, title")
-    with st.sidebar.expander(f"Sources ({len(sources)})"):
-        st.caption("Public documents only")
-        for r in sources.itertuples():
-            st.caption(f"• {r.PUBLISHER}: {r.TITLE}")
+    st.sidebar.caption("Sources (public documents only)")
+    for r in cached(f"SELECT publisher, title FROM {S}.SOURCE_REGISTER ORDER BY publisher, title").itertuples():
+        st.sidebar.caption(f"• {r.PUBLISHER}: {r.TITLE}")
 
 
 # ---------------------------------------------------------------
@@ -179,13 +155,7 @@ def sidebar():
 # ---------------------------------------------------------------
 
 def show_verdict(hid):
-    summary = query(f"""SELECT verdict, summary_text, supports, limits, not_comparable, needs_review,
-                                a_evidence, b_evidence, drug_a, drug_b
-                         FROM {S}.HYPOTHESIS_SUMMARY WHERE hypothesis_id = ?""", (hid,))
-    if summary.empty:
-        st.warning("This statement has not been summarised yet.")
-        return
-    s = summary.iloc[0]
+    s = query(f"SELECT * FROM {S}.HYPOTHESIS_SUMMARY WHERE hypothesis_id = ?", [hid]).iloc[0]
     st.subheader(f"Verdict: {s['VERDICT']}")
     st.info(s["SUMMARY_TEXT"])
     for col, name in zip(st.columns(4), ("SUPPORTS", "LIMITS", "NOT_COMPARABLE", "NEEDS_REVIEW")):
@@ -275,19 +245,17 @@ def add_document_tab():
     with st.spinner("Uploading and reading the document..."):
         register_file("DOCS_STAGE", "DOCS", name, uploaded.getvalue(), "Uploaded by user",
                       title, publisher, url, drug, ("DOC_PAGES", "SNIPPETS"))
-        execute_many([
-            (f"""INSERT INTO {S}.DOC_PAGES (file_name, page_no, page_text)
-                  SELECT d.file_name, p.page_no, p.page_text
-                  FROM {S}.DOCUMENTS d,
-                       TABLE({S}.READ_DOC(BUILD_SCOPED_FILE_URL(@{S}.DOCS_STAGE, d.file_name), d.file_name)) p
-                  WHERE d.file_name = ?""", [name]),
-            (f"""INSERT INTO {S}.SNIPPETS
-                  SELECT p.file_name || '|p' || p.page_no || '|s' || s.index,
-                         p.file_name, p.page_no, s.index, TRIM(s.value)
-                  FROM {S}.DOC_PAGES p,
-                       LATERAL SPLIT_TO_TABLE(REGEXP_REPLACE(p.page_text, '[[:space:]]+', ' '), '. ') s
-                  WHERE p.file_name = ? AND LENGTH(TRIM(s.value)) > 20""", [name]),
-        ])
+        execute(f"""INSERT INTO {S}.DOC_PAGES (file_name, page_no, page_text)
+                    SELECT d.file_name, p.page_no, p.page_text
+                    FROM {S}.DOCUMENTS d,
+                         TABLE({S}.READ_DOC(BUILD_SCOPED_FILE_URL(@{S}.DOCS_STAGE, d.file_name), d.file_name)) p
+                    WHERE d.file_name = ?""", [name])
+        execute(f"""INSERT INTO {S}.SNIPPETS
+                    SELECT p.file_name || '|p' || p.page_no || '|s' || s.index,
+                           p.file_name, p.page_no, s.index, TRIM(s.value)
+                    FROM {S}.DOC_PAGES p,
+                         LATERAL SPLIT_TO_TABLE(REGEXP_REPLACE(p.page_text, '[[:space:]]+', ' '), '. ') s
+                    WHERE p.file_name = ? AND LENGTH(TRIM(s.value)) > 20""", [name])
 
     pages = query(f"SELECT COUNT(*) AS N FROM {S}.DOC_PAGES WHERE file_name = ?", [name]).iloc[0]["N"]
     st.success(f"Read {int(pages)} pages from {name}. It is now used for every statement.")
@@ -304,18 +272,16 @@ def ocr_ready():
 
 def read_image(name):
     """OCR one image with the Snowflake function and save its lines. Returns (lines, confidence, label)."""
-    execute_many([
-        (f"DELETE FROM {S}.OCR_RESULTS WHERE file_name = ?", [name]),
-        (f"""INSERT INTO {S}.OCR_RESULTS
-              WITH lines AS (
-                  SELECT line_no, text, confidence
-                  FROM TABLE({S}.OCR_IMAGE(BUILD_SCOPED_FILE_URL(@{S}.IMAGES_STAGE, ?)))
-              ),
-              s AS (SELECT AVG(confidence) AS avg_conf FROM lines)
-              SELECT ?, l.line_no, l.text, l.confidence, s.avg_conf, {QUALITY_SQL},
-                     'RapidOCR (Snowflake function)', CURRENT_TIMESTAMP()
-              FROM lines l CROSS JOIN s""", [name, name]),
-    ])
+    execute(f"DELETE FROM {S}.OCR_RESULTS WHERE file_name = ?", [name])
+    execute(f"""INSERT INTO {S}.OCR_RESULTS
+                WITH lines AS (
+                    SELECT line_no, text, confidence
+                    FROM TABLE({S}.OCR_IMAGE(BUILD_SCOPED_FILE_URL(@{S}.IMAGES_STAGE, ?)))
+                ),
+                s AS (SELECT AVG(confidence) AS avg_conf FROM lines)
+                SELECT ?, l.line_no, l.text, l.confidence, s.avg_conf, {QUALITY_SQL},
+                       'RapidOCR (Snowflake function)', CURRENT_TIMESTAMP()
+                FROM lines l CROSS JOIN s""", [name, name])
     r = query(f"SELECT COUNT(*) AS N, MAX(file_confidence) AS C, MAX(quality_label) AS L "
               f"FROM {S}.OCR_RESULTS WHERE file_name = ?", [name]).iloc[0]
     if int(r["N"]) == 0:   # no text at all: record it so the image isn't silently skipped
@@ -366,10 +332,7 @@ def waiting_images_section(ready):
 
 def image_analysis_section(ready):
     st.markdown("### Image analysis")
-    profiles = query(f"""SELECT file_name, content_type, drugs_detected, drug_check, quality_label,
-                                  outcomes_found, matches_pdf, differs_pdf, summary_text, registered_drug,
-                                  trial_mentioned, avg_confidence, source_url
-                           FROM {S}.IMAGE_PROFILE ORDER BY avg_confidence DESC NULLS LAST""")
+    profiles = query(f"SELECT * FROM {S}.IMAGE_PROFILE ORDER BY avg_confidence DESC NULLS LAST")
     if profiles.empty:
         st.info("No analysed images yet. Upload one above.")
         return
@@ -433,12 +396,11 @@ def approve_section(title, frame, cols, key, insert_sql, to_params):
         st.info("Nothing new found.")
         return
     st.dataframe(frame[cols], width="stretch")
-    labels = [f"{i + 1}. " + " | ".join(str(frame.iloc[i][c]) for c in cols[:2])
-              for i in range(len(frame))]
-    chosen = st.multiselect("Tick the ones to approve", range(len(frame)),
-                            format_func=labels.__getitem__, key=key)
+    labels = [f"{i + 1}. " + " | ".join(str(r[c]) for c in cols[:2]) for i, (_, r) in enumerate(frame.iterrows())]
+    chosen = st.multiselect("Tick the ones to approve", labels, key=key)
     if chosen and st.button(f"Approve {len(chosen)}", key=f"{key}_approve"):
-        execute_many((insert_sql, to_params(frame.iloc[index])) for index in chosen)
+        for label in chosen:
+            execute(insert_sql, to_params(frame.iloc[labels.index(label)]))
         st.success(f"Approved {len(chosen)}. The rules use them straight away.")
         st.rerun()
 
@@ -448,30 +410,26 @@ def vocabulary_tab():
                "A human approves them before the evidence rules use them. Nothing is added automatically.")
     approve_section(
         "New drug names found",
-        query(f"""SELECT drug, suggested_class, documents, mentions
-                   FROM {S}.DRUG_CANDIDATES WHERE status = 'New'
-                   ORDER BY documents DESC, mentions DESC"""),
+        query(f"SELECT * FROM {S}.DRUG_CANDIDATES WHERE status = 'New' ORDER BY documents DESC, mentions DESC"),
         ["DRUG", "SUGGESTED_CLASS", "DOCUMENTS", "MENTIONS"], "drugs",
         f"INSERT INTO {S}.DRUG_TERMS VALUES (?, ?, ?, 'Breast cancer')",
         lambda r: [r["DRUG"], r["DRUG"], r["SUGGESTED_CLASS"]])
     approve_section(
         "Brand names found",
-        query(f"""SELECT brand, drug, generic_text, file_name
-                   FROM {S}.BRAND_CANDIDATES WHERE status = 'New' ORDER BY brand"""),
+        query(f"SELECT * FROM {S}.BRAND_CANDIDATES WHERE status = 'New' ORDER BY brand"),
         ["BRAND", "DRUG", "GENERIC_TEXT", "FILE_NAME"], "brands",
         f"INSERT INTO {S}.DRUG_TERMS SELECT ?, ?, MAX(drug_class), 'Breast cancer' FROM {S}.DRUG_TERMS WHERE drug = ?",
         lambda r: [r["DRUG"], r["BRAND"], r["DRUG"]])
     approve_section(
         "Side effects found in adverse-reaction tables",
-        query(f"SELECT term, documents, mentions FROM {S}.OUTCOME_CANDIDATES WHERE status = 'New' "
+        query(f"SELECT * FROM {S}.OUTCOME_CANDIDATES WHERE status = 'New' "
               "ORDER BY documents DESC, mentions DESC LIMIT 50"),
         ["TERM", "DOCUMENTS", "MENTIONS"], "outcomes",
         f"INSERT INTO {S}.OUTCOME_TERMS VALUES (?, ?)",
         lambda r: [r["TERM"], r["TERM"]])
     approve_section(
         "Suggested statements to stress-test",
-        query(f"""SELECT hypothesis_text, a_rate, b_rate, drug_class, drug_a, drug_b, outcome, direction
-                   FROM {S}.HYPOTHESIS_SUGGESTIONS ORDER BY drug_class, outcome"""),
+        query(f"SELECT * FROM {S}.HYPOTHESIS_SUGGESTIONS ORDER BY drug_class, outcome"),
         ["HYPOTHESIS_TEXT", "A_RATE", "B_RATE", "DRUG_CLASS"], "statements",
         f"INSERT INTO {S}.HYPOTHESES (hypothesis_text, drug_a, drug_b, outcome, direction) VALUES (?, ?, ?, ?, ?)",
         lambda r: [r["HYPOTHESIS_TEXT"], r["DRUG_A"], r["DRUG_B"], r["OUTCOME"], r["DIRECTION"]])
@@ -487,14 +445,10 @@ st.warning("Research and education tool only. It checks whether published eviden
 
 sidebar()
 
-pages = {
-    "Stress-test a statement": stress_test_tab,
-    "Add a document": add_document_tab,
-    "Images": images_tab,
-    "Vocabulary": vocabulary_tab,
-}
-page = st.radio("Section", list(pages), horizontal=True, label_visibility="collapsed")
-pages[page]()
+for tab, render in zip(st.tabs(["Stress-test a statement", "Add a document", "Images", "Vocabulary"]),
+                       (stress_test_tab, add_document_tab, images_tab, vocabulary_tab)):
+    with tab:
+        render()
 
 st.caption("Sources: Medsafe, US FDA, NICE, NCI, Pharmac (public documents only). "
            "No patient data is used. Not medical advice.")
